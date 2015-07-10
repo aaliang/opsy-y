@@ -15,10 +15,7 @@ var sortByCreationTime = function (a, b) {
  * @param {int} maxDays the cutoff days to discard AMIs
  */
 function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
-
-  if (AWS.config.creditials == null) {
-    AWS.config.loadFromPath(__dirname + '/aws-config.json');
-  }
+  if (AWS.config.creditials == null) AWS.config.loadFromPath(__dirname + '/aws-config.json');
   var ec2 = new AWS.EC2();
   ec2.describeImages({Owners: ['self']}, function (err, data) {
     var NAME_LHS = "name=";
@@ -26,11 +23,10 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
     // convert available images array to an object {imageBuckets} representing a hash map where
     // (k, v) -> (image type, array of images)
     var imageBuckets = data.Images.reduce(function (o, v) {
-      var name = null;
       v.Description.split(",").every(function (e) {
         var strim = e.trim();
         if (strim.indexOf(NAME_LHS) === 0) {
-          name = strim.substring(NAME_LHS.length, strim.length);
+          var name = strim.substring(NAME_LHS.length, strim.length);
           return false; //return immediately
         }
         return true;
@@ -42,8 +38,7 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
       return o;
     }, {});
     Object.keys(imageBuckets).forEach(function(e){ // for each type
-      var imageType = imageBuckets[e].map(function(el){
-        //mutate... add _creationTime to the original object so we don't have to look for it each time
+      var imageType = imageBuckets[e].map(function(el){ //mutate... add _creationTime to the original object so we don't have to look for it each time
         el._creationTime = el.Tags.filter(function(item){ return (item.Key == "creation_time")})[0].Value;
         return el;
       }).sort(sortByCreationTime);
@@ -52,18 +47,14 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
         if (el._creationTime < cutoffTime) { //if anything is out of the cutoff, automatically add it to the list of removals
           delCount++;
           return true;
-        } else {
-          // we want a max of {maxToKeep} items within the cutoff
-          if (imageType.length - delCount > maxToKeep) {
-            delCount++;
-            return true;
-          }
+        } else if (imageType.length - delCount > maxToKeep) {
+          delCount++;
+          return true;
         }
       });
       // enforce minimum condition
-      if (imageType.length - imagesToDelete.length < minToKeep) {
+      if (imageType.length - imagesToDelete.length < minToKeep)
         imagesToDelete = imagesToDelete.slice(0, imageType.length - minToKeep);
-      }
       imagesToDelete.forEach(function (el) {
         //deregister each el
         ec2.deregisterImage({ImageId: el.ImageId, DryRun: false}, function(err, data) {
