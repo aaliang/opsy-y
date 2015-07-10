@@ -24,12 +24,16 @@ for table in to_import:
 
   args = {'table_name': table_name }
 
+  #execute as a shell command
   schema_list = os.popen(BASE_COMMAND_JSON % {'sql_command': 'SHOW COLUMNS FROM %(table_name)s;' % args})
 
   schema = [field['columns']['field'] for field in map(json.loads, schema_list) if field['type'] == 'row']
 
+  #open file for writing
   file = open(table_name, 'w')
 
+  #first write the schem as a csv string on the first line
+  #it will be possible for json to omit certain column names
   file.write(','.join(schema))
   file.write('\n')
 
