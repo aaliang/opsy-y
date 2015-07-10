@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 #dumps all history from tables gerrit's shitty sql impl into a bunch of json files
+#we are scripting against the java command gsql
 
 import os
 import json
@@ -17,6 +18,7 @@ to_import = filter(
   map(json.loads, os.popen(LIST_TABLES))
 )
 
+#for each table, write out each row as json into file
 for table in to_import:
   table_name = table['columns']['table_name']
 
