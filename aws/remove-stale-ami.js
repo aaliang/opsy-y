@@ -1,16 +1,12 @@
 #!/usr/bin/env node
-
 var AWS = require('aws-sdk'),
     moment = require('moment');
-    
 //automation script to remove(deregister) stale aws amis
-
 var sortByCreationTime = function (a, b) {
   if (a._creationTime > b._creationTime) return 1;
   if (a._creationTime < b._creationTime) return -1;
   return 0;
 };
-
 
 /**
  * Removes stale AMIs
@@ -47,7 +43,7 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
       });
       if (name != null) { // else ignore those without names
         if (o[name]) { o[name].push(v) }
-       else { o[name] = [v] }
+        else { o[name] = [v] }
       }
       return o;
     }, {});
@@ -58,7 +54,6 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
         el._creationTime = el.Tags.filter(function(item){ return (item.Key == "creation_time")})[0].Value;
         return el;
       }).sort(sortByCreationTime);
-
       var delCount = 0; // delCount == imagesToDelete.length
       var imagesToDelete = imageType.filter(function(el) {
         if (el._creationTime < cutoffTime) { //if anything is out of the cutoff, automatically add it to the list of removals
@@ -76,7 +71,6 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
       if (imageType.length - imagesToDelete.length < minToKeep) {
         imagesToDelete = imagesToDelete.slice(0, imageType.length - minToKeep);
       }
-
       imagesToDelete.forEach(function (el) {
         //deregister each el
         ec2.deregisterImage({ImageId: el.ImageId, DryRun: false}, function(err, data) {
@@ -88,12 +82,6 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
   });
 };
 
-var minToKeep = parseInt(process.argv[2]),
-    maxToKeep = parseInt(process.argv[3]),
-    maxDays = parseInt(process.argv[4]);
-
 if (process.argv.length == 5 || !(isNaN(minToKeep) || isNaN(maxToKeep) || isNaN(maxDays))) {
-  removeStaleAMIs(parseInt(process.argv[2]), parseInt(process.argv[3]), parseInt(process.argv[4])); //TODO: use getopt
-} else {
-  console.log("improper usage: node remove-stale-ami.js [MIN_AMIS] [MAX_AMIS] [CUTOFF_DAYS]");
-}
+  removeStaleAMIs(parseInt(process.argv[2]), parseInt(process.argv[3]), parseInt(process.argv[4]));
+} else { console.log("improper usage: node remove-stale-ami.js [MIN_AMIS] [MAX_AMIS] [CUTOFF_DAYS]"); }
