@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #copies the git and h2 files from remote onto your local directory
 
 #USER@DOMAIN for ssh
