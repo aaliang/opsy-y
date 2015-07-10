@@ -8,8 +8,6 @@ var sortByCreationTime = function (a, b) {
   return 0;
 };
 /**
- * Removes stale AMIs
- *
  * @param {int} minToKeep the minimum number of AMIs to keep, irrespective of maxDays
  * @param {int} maxToKeep the maximum number of AMIs to keep less than {maxDays} old
  * @param {int} maxDays the cutoff days to discard AMIs
@@ -42,21 +40,13 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
         el._creationTime = el.Tags.filter(function(item){ return (item.Key == "creation_time")})[0].Value;
         return el;
       }).sort(sortByCreationTime);
-      var delCount = 0; // delCount == imagesToDelete.length
-      var imagesToDelete = imageType.filter(function(el) {
-        if (el._creationTime < cutoffTime) { //if anything is out of the cutoff, automatically add it to the list of removals
-          delCount++;
-          return true;
-        } else if (imageType.length - delCount > maxToKeep) {
-          delCount++;
-          return true;
-        }
+      var imagesToDelete = imageType.filter(function(el, _, arr) {
+        return (el._creationTime < cutoffTime || imageType.length - arr.length > maxToKeep);
       });
       // enforce minimum condition
       if (imageType.length - imagesToDelete.length < minToKeep)
         imagesToDelete = imagesToDelete.slice(0, imageType.length - minToKeep);
-      imagesToDelete.forEach(function (el) {
-        //deregister each el
+      imagesToDelete.forEach(function (el) { //deregister each el
         ec2.deregisterImage({ImageId: el.ImageId, DryRun: false}, function(err, data) {
           if (err) console.log(err, err.stack); // an error occurred
           else console.log("deregistering: " + el.ImageId);
