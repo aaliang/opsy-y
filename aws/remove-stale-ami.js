@@ -7,7 +7,6 @@ var sortByCreationTime = function (a, b) {
   if (a._creationTime < b._creationTime) return -1;
   return 0;
 };
-
 /**
  * Removes stale AMIs
  *
@@ -20,15 +19,10 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
   if (AWS.config.creditials == null) {
     AWS.config.loadFromPath(__dirname + '/aws-config.json');
   }
-
   var ec2 = new AWS.EC2();
-
   ec2.describeImages({Owners: ['self']}, function (err, data) {
-
     var NAME_LHS = "name=";
-
     var cutoffTime = moment.utc().subtract(maxDays, 'days').format('YYYY-MM-DD HH:mm:ss [UTC]');
-
     // convert available images array to an object {imageBuckets} representing a hash map where
     // (k, v) -> (image type, array of images)
     var imageBuckets = data.Images.reduce(function (o, v) {
@@ -47,7 +41,6 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
       }
       return o;
     }, {});
-
     Object.keys(imageBuckets).forEach(function(e){ // for each type
       var imageType = imageBuckets[e].map(function(el){
         //mutate... add _creationTime to the original object so we don't have to look for it each time
@@ -81,7 +74,6 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
     });
   });
 };
-
 if (process.argv.length == 5 || !(isNaN(minToKeep) || isNaN(maxToKeep) || isNaN(maxDays))) {
   removeStaleAMIs(parseInt(process.argv[2]), parseInt(process.argv[3]), parseInt(process.argv[4]));
 } else { console.log("improper usage: node remove-stale-ami.js [MIN_AMIS] [MAX_AMIS] [CUTOFF_DAYS]"); }
