@@ -2,11 +2,7 @@
 var AWS = require('aws-sdk'),
     moment = require('moment');
 //automation script to remove(deregister) stale aws amis
-var sortByCreationTime = function (a, b) {
-  if (a._creationTime > b._creationTime) return 1;
-  if (a._creationTime < b._creationTime) return -1;
-  return 0;
-};
+var sortByCreationTime = function (a, b) { return a._creationTime - b._creationTime;};
 /**
  * @param {int} minToKeep the minimum number of AMIs to keep, irrespective of maxDays
  * @param {int} maxToKeep the maximum number of AMIs to keep less than {maxDays} old
@@ -37,7 +33,7 @@ function removeStaleAMIs(minToKeep, maxToKeep, maxDays) {
     }, {});
     Object.keys(imageBuckets).forEach(function(e){ // for each type
       var imageType = imageBuckets[e].map(function(el){ //mutate... add _creationTime to the original object so we don't have to look for it each time
-        el._creationTime = el.Tags.filter(function(item){ return (item.Key == "creation_time")})[0].Value;
+        el._creationTime = +el.Tags.filter(function(item){ return (item.Key == "creation_time")})[0].Value;
         return el;
       }).sort(sortByCreationTime);
       var imagesToDelete = imageType.filter(function(el, _, arr) {
